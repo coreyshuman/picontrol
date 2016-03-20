@@ -14,48 +14,61 @@ func main() {
 	gtk.Init(nil)
 	var wg sync.WaitGroup
 	quit := make(chan bool)
+	var serialUSB int = -1
+	var serialXBEE int = -1
+	var err error
 
 	window := gtk.NewWindow(gtk.WINDOW_TOPLEVEL)
 	window.SetPosition(gtk.WIN_POS_CENTER)
 	window.SetTitle("Pi Controller")
 	window.SetIconName("gtk-dialog-info")
 	window.Connect("destroy", func() {
-		serial.Disconnect()
+		serial.Disconnect(serialUSB)
+		serial.Disconnect(serialXBEE)
 		quit <- true
 		wg.Wait()
 		gtk.MainQuit()
 	})
 	
-	serial.Connect()
+	serial.Init()
+	serialUSB, err = serial.Connect("/dev/ttyUSB0", 115200, 30)
+	serialXBEE, err = serial.Connect("/dev/ttyAMA0", 115200, 30)
+	
+	fmt.Println("USB: " + fmt.Sprintf("%d",serialUSB))
+	fmt.Println("XBEE: " + fmt.Sprintf("%d",serialXBEE))
 	
 	vbox := gtk.NewVBox(false, 1)
 
 	btnBackward := gtk.NewButtonWithLabel("Backward")
 	btnBackward.Clicked(func() {
+		var d string
 		fmt.Println("button clicked:", btnBackward.GetLabel())
-		serial.Send("sp 40,0,0\n")
-		d := serial.Read()
+		serial.Send(serialUSB, "sp 40,0,0\n")
+		d, err = serial.Read(serialUSB)
 		fmt.Println(d)
 	})
 	btnForward := gtk.NewButtonWithLabel("Forward")
 	btnForward.Clicked(func() {
+		var d string
 		fmt.Println("button clicked:", btnForward.GetLabel())
-		serial.Send("sp 0,40,0\n")
-		d := serial.Read()
+		serial.Send(serialUSB, "sp 0,40,0\n")
+		d, err = serial.Read(serialUSB)
 		fmt.Println(d)
 	})
 	btnLeft := gtk.NewButtonWithLabel("Left")
 	btnLeft.Clicked(func() {
+		var d string
 		fmt.Println("button clicked:", btnLeft.GetLabel())
-		serial.Send("sp 0,0,40\n")
-		d := serial.Read()
+		serial.Send(serialUSB, "sp 0,0,40\n")
+		d, err = serial.Read(serialUSB)
 		fmt.Println(d)
 	})
 	btnRight := gtk.NewButtonWithLabel("Right")
 	btnRight.Clicked(func() {
+		var d string
 		fmt.Println("button clicked:", btnRight.GetLabel())
-		serial.Send("sp 0,40,40\n")
-		d := serial.Read()
+		serial.Send(serialUSB, "sp 0,40,40\n")
+		d, err= serial.Read(serialUSB)
 		fmt.Println(d)
 	})
 	
@@ -93,6 +106,11 @@ func main() {
 	// subroutine to poll controller inputs
 	fmt.Println("Setup Go Routine")
 	go func() {
+		throttle := 0.0
+		yaw := 0.0
+		pitch := 0.0
+		roll := 0.0
+		outString := ""
 		wg.Add(1)
 		for {
 			select {
@@ -100,9 +118,12 @@ func main() {
 				wg.Done()
 				return
 			default:
-				serial.Send("ga\n")
+				serial.Send(serialUSB, "ga\n")
 				time.Sleep(time.Millisecond*15)
-				read := serial.Read()
+				read, err := serial.Read(serialUSB)
+				if err != nil {
+					continue
+				}
 				stripCmd := strings.Split(read, " ")
 				if len(stripCmd) < 2 {
 					break
@@ -113,22 +134,37 @@ func main() {
 						switch(i) {
 							case 0:
 								val, _ := strconv.ParseFloat(data[i], 64)
+								throttle = scale(val, 0, 1024, 0, 255)
+								outString += fmt.Sprintf("%0X", int(throttle)) + ","
 								lxscale.SetValue(val)
 								break;
 							case 1:
 								val, _ := strconv.ParseFloat(data[i], 64)
+								yaw = scale(val, 0, 1024, 0, 255)
+								outString += fmt.Sprintf("%0X", int(yaw)) + ","
 								lyscale.SetValue(val)
 								break;
 							case 2:
 								val, _ := strconv.ParseFloat(data[i], 64)
+								pitch = scale(val, 0, 1024, 0, 255)
+								outString += fmt.Sprintf("%0X", int(pitch)) + ","
 								rxscale.SetValue(val)
 								break;
 							case 3:
 								val, _ := strconv.ParseFloat(data[i], 64)
+								roll = scale(val, 0, 1024, 0, 255)
+								outString += fmt.Sprintf("%0X", int(roll)) + ","
 								ryscale.SetValue(val)
 								break;
 						}
 					}
+					serial.Send(serialXBEE, outString + "\n" )
+					time.Sleep(time.Millisecond*15)
+					read, err = serial.Read(serialXBEE)
+					if err != nil {
+						continue
+					}	
+					fmt.Println(read)
 				}
 				time.Sleep(time.Millisecond*100)
 			}
@@ -139,5 +175,18 @@ func main() {
 	
 	
 	
+}
+
+// todo - algorithms need work
+func scale(val float64, min float64, max float64, outMin float64, outMax float64) float64 {
+	denom := 1.0
+	y := 0.0
+	if outMin - min != 0 {
+		denom = outMin - min
+		y = (outMax - max) / denom * val - min + outMin
+	} else {
+		y = outMax / max * val - min + outMin
+	}
+	return y
 }
 
