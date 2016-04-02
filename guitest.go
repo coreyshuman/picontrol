@@ -112,12 +112,15 @@ func main() {
 		roll := 0.0
 		outString := ""
 		wg.Add(1)
+		fmt.Println("Entering XBEE for loop")
 		for {
+			time.Sleep(time.Millisecond*500)
 			select {
 			case <- quit:
 				wg.Done()
 				return
 			default:
+				outString = ""
 				serial.Send(serialUSB, "ga\n")
 				time.Sleep(time.Millisecond*15)
 				read, err := serial.Read(serialUSB)
@@ -135,25 +138,25 @@ func main() {
 							case 0:
 								val, _ := strconv.ParseFloat(data[i], 64)
 								throttle = scale(val, 0, 1024, 0, 255)
-								outString += fmt.Sprintf("%0X", int(throttle)) + ","
+								outString += fmt.Sprintf("%02X", int(throttle)) + ","
 								lxscale.SetValue(val)
 								break;
 							case 1:
 								val, _ := strconv.ParseFloat(data[i], 64)
 								yaw = scale(val, 0, 1024, 0, 255)
-								outString += fmt.Sprintf("%0X", int(yaw)) + ","
+								outString += fmt.Sprintf("%02X", int(yaw)) + ","
 								lyscale.SetValue(val)
 								break;
 							case 2:
 								val, _ := strconv.ParseFloat(data[i], 64)
 								pitch = scale(val, 0, 1024, 0, 255)
-								outString += fmt.Sprintf("%0X", int(pitch)) + ","
+								outString += fmt.Sprintf("%02X", int(pitch)) + ","
 								rxscale.SetValue(val)
 								break;
 							case 3:
 								val, _ := strconv.ParseFloat(data[i], 64)
 								roll = scale(val, 0, 1024, 0, 255)
-								outString += fmt.Sprintf("%0X", int(roll)) + ","
+								outString += fmt.Sprintf("%02X", int(roll))
 								ryscale.SetValue(val)
 								break;
 						}
@@ -166,7 +169,7 @@ func main() {
 					}	
 					fmt.Println(read)
 				}
-				time.Sleep(time.Millisecond*100)
+				
 			}
 		}
 	}()
