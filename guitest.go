@@ -114,13 +114,13 @@ func main() {
 		wg.Add(1)
 		fmt.Println("Entering XBEE for loop")
 		for {
-			time.Sleep(time.Millisecond*500)
+			time.Sleep(time.Millisecond*200)
 			select {
 			case <- quit:
 				wg.Done()
 				return
 			default:
-				outString = ""
+				outString = "tel "
 				serial.Send(serialUSB, "ga\n")
 				time.Sleep(time.Millisecond*15)
 				read, err := serial.Read(serialUSB)
