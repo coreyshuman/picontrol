@@ -46,6 +46,7 @@ func main() {
 		serial.Send(serialUSB, "sp 40,0,0\n")
 		d, err = serial.Read(serialUSB)
 		fmt.Println(d)
+		serial.Send(serialXBEE, "navarm 0\n" )
 	})
 	btnForward := gtk.NewButtonWithLabel("Forward")
 	btnForward.Clicked(func() {
@@ -54,6 +55,7 @@ func main() {
 		serial.Send(serialUSB, "sp 0,40,0\n")
 		d, err = serial.Read(serialUSB)
 		fmt.Println(d)
+		serial.Send(serialXBEE, "navarm 1\n" )
 	})
 	btnLeft := gtk.NewButtonWithLabel("Left")
 	btnLeft.Clicked(func() {
@@ -62,6 +64,7 @@ func main() {
 		serial.Send(serialUSB, "sp 0,0,40\n")
 		d, err = serial.Read(serialUSB)
 		fmt.Println(d)
+		serial.Send(serialXBEE, "navacl 1\n" )
 	})
 	btnRight := gtk.NewButtonWithLabel("Right")
 	btnRight.Clicked(func() {
@@ -70,6 +73,7 @@ func main() {
 		serial.Send(serialUSB, "sp 0,40,40\n")
 		d, err= serial.Read(serialUSB)
 		fmt.Println(d)
+		serial.Send(serialXBEE, "navacl 0\n" )
 	})
 	
 	table := gtk.NewTable(3,4,true)
@@ -114,13 +118,13 @@ func main() {
 		wg.Add(1)
 		fmt.Println("Entering XBEE for loop")
 		for {
-			time.Sleep(time.Millisecond*200)
+			time.Sleep(time.Millisecond*100)
 			select {
 			case <- quit:
 				wg.Done()
 				return
 			default:
-				outString = "tel "
+				outString = "telnav "
 				serial.Send(serialUSB, "ga\n")
 				time.Sleep(time.Millisecond*15)
 				read, err := serial.Read(serialUSB)
