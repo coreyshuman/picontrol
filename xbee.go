@@ -20,9 +20,45 @@ func main() {
 	xbeeapi.Begin()
 	fmt.Println("XBEE: " + fmt.Sprintf("%d",serialXBEE))
 	
+	// get serial number high
+	time.Sleep(time.Millisecond*500)
+	_, _, err = xbeeapi.SendATCommand([]byte{byte('S'), byte('H')}, nil)
+	if(err != nil) {
+		fmt.Println("Send AT error: " + err.Error())
+	}
+	time.Sleep(time.Millisecond*500)
 	
+	// get serial number low
+	time.Sleep(time.Millisecond*500)
+	_, _, err = xbeeapi.SendATCommand([]byte{byte('S'), byte('L')}, nil)
+	if(err != nil) {
+		fmt.Println("Send AT error: " + err.Error())
+	}
+	time.Sleep(time.Millisecond*500)
 	
-	time.Sleep(time.Millisecond*1000)
+	// get 16-bit network address
+	time.Sleep(time.Millisecond*500)
+	_, _, err = xbeeapi.SendATCommand([]byte{byte('M'), byte('Y')}, nil)
+	if(err != nil) {
+		fmt.Println("Send AT error: " + err.Error())
+	}
+	time.Sleep(time.Millisecond*500)
+	
+	// get channel
+	time.Sleep(time.Millisecond*500)
+	_, _, err = xbeeapi.SendATCommand([]byte{byte('C'), byte('H')}, nil)
+	if(err != nil) {
+		fmt.Println("Send AT error: " + err.Error())
+	}
+	time.Sleep(time.Millisecond*500)
+	
+	// get PAN ID
+	time.Sleep(time.Millisecond*500)
+	_, _, err = xbeeapi.SendATCommand([]byte{byte('I'), byte('D')}, nil)
+	if(err != nil) {
+		fmt.Println("Send AT error: " + err.Error())
+	}
+	time.Sleep(time.Millisecond*500)
 	
 	
 	xbeeapi.End()
