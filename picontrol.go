@@ -2,12 +2,16 @@ package main
 
 import (
 	"fmt"
-	"strings"
+	"encoding/hex"
+//	"strings"
 	"sync"
 	"strconv"
 	"time"
+	"os"
 	"github.com/mattn/go-gtk/gtk"
-	"github.com/coreyshuman/picontrol/serial"
+//	"github.com/coreyshuman/picontrol/serial"
+	"github.com/coreyshuman/xbeeapi"
+	"github.com/coreyshuman/picontrol/arduinoio"
 )
 
 const XbeeInterDelay = 500
@@ -36,9 +40,9 @@ func main() {
 	var buttons0 int = 0
 	var buttons1 int = 0
 	
-	targetAddress = []byte{0x00, 0x13, 0xa2, 0x00, 0x40, 0x0a, 0x01, 0x27}
+	var targetAddress = []byte{0x00, 0x13, 0xa2, 0x00, 0x40, 0x0a, 0x01, 0x27}
 	
-	for(i=0; i<6; i++) {
+	for i=0; i<6; i++ {
 		analog[i] = 0
 	}
 	
@@ -144,13 +148,13 @@ func main() {
 		}
 	})
 	volBar := gtk.NewProgressBar()
-	volBar.SetFraction(volume/0x3F)
+	volBar.SetFraction(float64(volume/0x3F))
 	btnVolUp := gtk.NewButtonWithLabel("Vol UP")
 	btnVolUp.Clicked(func() {
 		fmt.Println("button clicked:", btnVolUp.GetLabel())
 		if (volume < 0x3F) {
 			volume ++
-			volBar.SetFraction(volume/0x3F)
+			volBar.SetFraction(float64(volume/0x3F))
 			// send volume command to device
 		}
 	})
@@ -159,7 +163,7 @@ func main() {
 		fmt.Println("button clicked:", btnVolDown.GetLabel())
 		if (volume > 0x00) {
 			volume --
-			volBar.SetFraction(volume/0x3F)
+			volBar.SetFraction(float64(volume/0x3F))
 			// send volume command to device
 		}
 	})
@@ -250,7 +254,7 @@ func main() {
 					fmt.Println("Send Command aio error: " + err.Error())
 				}
 				time.Sleep(time.Millisecond*50)
-				d = formatTelemetry()
+				d = formatTelemetry(analog, headControl, armDevice, stabilize, autoVoice)
 				_, _, err := xbeeapi.SendPacket(targetAddress, nil, 0x00, d)
 				if err != nil {
 					fmt.Println("Send Packet xbee error: " + err.Error())
@@ -258,7 +262,7 @@ func main() {
 				time.Sleep(time.Millisecond*50)
 				// clear telemetry data if not updated recently
 				if(time.Since(lastReceivedControl) > time.Second/2) {
-					for(i=0; i<6; i++) {
+					for i=0; i<6; i++ {
 						analog[i] = 0
 					}
 					buttons0 = 0
@@ -286,13 +290,13 @@ func scale(val float64, min float64, max float64, outMin float64, outMax float64
 	return y
 }
 
-func formatTelemetry() (out []byte) {
-	outs = "tel "
+func formatTelemetry(analog [6]int, headControl bool, armDevice bool, stabilize bool, autoVoice bool) (out []byte) {
+	outs := "tel "
 	var digital int = 0
 	var alg [6]int
 	var i int
 	
-	for(i=0; i<6; i++) {
+	for i=0; i<6; i++ {
 		alg[i] = analog[i]
 	}
 	
@@ -301,15 +305,24 @@ func formatTelemetry() (out []byte) {
 		alg[2] = 0
 	}
 	
-	for(i=0; i<6; i++) {
+	for i=0; i<6; i++ {
 		outs += fmt.Sprintf("%04X", alg[i]*0xFFFF/1023) + ","
 	}
 	outs += "0000,"
-	digital = int(armDevice) << 15 | int(stabilize) << 14 | int(autoVoice) << 13
+	digital = btoi(armDevice) << 15 | btoi(stabilize) << 14 | btoi(autoVoice) << 13
 	outs += fmt.Sprintf("%04X", digital)
 	fmt.Println(outs)
 	
 	out = []byte(outs)
+	return
+}
+
+func btoi(b bool) int {
+	if b {
+		return 1
+	} else {
+		return 0
+	}
 }
 
 func closeApp() {
@@ -328,7 +341,7 @@ func getXBEEInfo() {
 	/******** Get XBEE configuration info *********/
 	// get serial number high
 	time.Sleep(time.Millisecond*XbeeInterDelay)
-	d, n, err = xbeeapi.SendATCommand([]byte{byte('S'), byte('H')}, nil)
+	d, n, err := xbeeapi.SendATCommand([]byte{byte('S'), byte('H')}, nil)
 	if(err != nil) {
 		fmt.Println("Send AT error: " + err.Error())
 	} else {
@@ -388,8 +401,9 @@ func aioGetAllCB(d []byte) {
         fmt.Print(s)
         fmt.Print(", ")
     }
-	buttons0 = d[i++]
-	buttons1 = d[i++]
+	buttons0 = d[i]
+	i++
+	buttons1 = d[i]
     fmt.Println(".")
 	lastReceivedControl = time.Now()
 }
