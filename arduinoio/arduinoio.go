@@ -177,8 +177,7 @@ func processTxData() {
 	}
 }
 
-func CalcChecksum(data []byte)(byte) {
-	n := len(data)
+func CalcChecksum(data []byte, n int)(byte) {
 	var cs byte = 0
 
 	for i := 0; i < n; i++ {
@@ -234,7 +233,7 @@ func ParseGetAllDataResponse(r []byte) (frameId byte, data []byte, err error) {
 		return 0, nil, errors.New("Frame Length Error: " + fmt.Sprintf("%d, %d", n, len(r)-4)) 
 	}
 	
-	check := CalcChecksum(r[3:n+3])
+	check := CalcChecksum(r[3:n+3], n)
 	if(check != r[n+3]) {
 		return 0, nil, errors.New(fmt.Sprintf( "Checksum Error: calc=[%02X] read=[%02X]", check, r[n+3] ) )
 	}
