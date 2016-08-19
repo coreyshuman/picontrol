@@ -16,6 +16,22 @@ import (
 
 const XbeeInterDelay = 500
 
+// timing variables
+var lastReceivedControl time.Time
+
+// robot state variables
+var armDevice bool = false
+var stabilize bool = false
+var autoVoice bool = false
+var headControl bool = false
+var playSW bool = false
+var volume int = 20
+// robot telemetry variables
+var analog [6]int
+var buttons0 int = 0
+var buttons1 int = 0
+var targetAddress []byte
+
 func main() {
 	gtk.Init(nil)
 	var wg sync.WaitGroup
@@ -25,22 +41,7 @@ func main() {
 	var err error
 	var i int
 	
-	// timing variables
-	var lastReceivedControl time.Time
-	
-	// robot state variables
-	var armDevice bool = false
-	var stabilize bool = false
-	var autoVoice bool = false
-	var headControl bool = false
-	var playSW bool = false
-	var volume int = 20
-	// robot telemetry variables
-	var analog [6]int
-	var buttons0 int = 0
-	var buttons1 int = 0
-	
-	var targetAddress = []byte{0x00, 0x13, 0xa2, 0x00, 0x40, 0x0a, 0x01, 0x27}
+	targetAddress = []byte{0x00, 0x13, 0xa2, 0x00, 0x40, 0x0a, 0x01, 0x27}
 	
 	for i=0; i<6; i++ {
 		analog[i] = 0
@@ -254,7 +255,7 @@ func main() {
 					fmt.Println("Send Command aio error: " + err.Error())
 				}
 				time.Sleep(time.Millisecond*50)
-				d = formatTelemetry(analog, headControl, armDevice, stabilize, autoVoice)
+				d = formatTelemetry()
 				_, _, err := xbeeapi.SendPacket(targetAddress, nil, 0x00, d)
 				if err != nil {
 					fmt.Println("Send Packet xbee error: " + err.Error())
@@ -290,7 +291,7 @@ func scale(val float64, min float64, max float64, outMin float64, outMax float64
 	return y
 }
 
-func formatTelemetry(analog [6]int, headControl bool, armDevice bool, stabilize bool, autoVoice bool) (out []byte) {
+func formatTelemetry() (out []byte) {
 	outs := "tel "
 	var digital int = 0
 	var alg [6]int
