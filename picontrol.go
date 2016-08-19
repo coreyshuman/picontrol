@@ -148,14 +148,17 @@ func main() {
 		}
 	})
 	volBar := gtk.NewProgressBar()
-	volBar.SetFraction(float64(volume/0x3F))
+	volBar.SetFraction(float64(volume)/63.0)
 	btnVolUp := gtk.NewButtonWithLabel("Vol UP")
 	btnVolUp.Clicked(func() {
 		fmt.Println("button clicked:", btnVolUp.GetLabel())
 		if (volume < 0x3F) {
 			volume ++
-			volBar.SetFraction(float64(volume/0x3F))
+			volBar.SetFraction(float64(volume)/63.0)
 			// send volume command to device
+			d := []bytes{'v', 'o', 'l', ' ', 0x00}
+			d[4] = volume
+			_, _, _ := xbeeapi.SendPacket(targetAddress, nil, 0x00, d)
 		}
 	})
 	btnVolDown := gtk.NewButtonWithLabel("Vol DOWN")
@@ -163,8 +166,11 @@ func main() {
 		fmt.Println("button clicked:", btnVolDown.GetLabel())
 		if (volume > 0x00) {
 			volume --
-			volBar.SetFraction(float64(volume/0x3F))
+			volBar.SetFraction(float64(volume)/63.0)
 			// send volume command to device
+			d := []bytes{'v', 'o', 'l', ' ', 0x00}
+			d[4] = volume
+			_, _, _ := xbeeapi.SendPacket(targetAddress, nil, 0x00, d)
 		}
 	})
 	btnPlaySW := gtk.NewButtonWithLabel("Play SW")
@@ -173,9 +179,13 @@ func main() {
 		if (playSW) {
 			playSW = false
 			btnPlaySW.SetLabel("Play SW")
+			d := []bytes{'s', 't', 'p', ' ', '1'}
+			_, _, _ := xbeeapi.SendPacket(targetAddress, nil, 0x00, d)
 		} else {
 			playSW = true
 			btnPlaySW.SetLabel("Stop SW")
+			d := []bytes{'p', 'l', 'y', ' ', '1', ' ', 'S', 'W', '0', '1'}
+			_, _, _ := xbeeapi.SendPacket(targetAddress, nil, 0x00, d)
 		}
 	})
 	
@@ -209,6 +219,7 @@ func main() {
 	
 	vbox.Add(btnTable)
 	
+	/*
 	// show input values as read
 	telemTable := gtk.NewTable(4, 7,true)
 	// left stick y bar
@@ -225,7 +236,7 @@ func main() {
 	telemTable.Attach(rxscale, 4,7,2,3,gtk.FILL, gtk.FILL, 5, 5)
 	
 	vbox.Add(telemTable)
-
+	*/
 	//--------------------------------------------------------
 	// Event
 	//--------------------------------------------------------

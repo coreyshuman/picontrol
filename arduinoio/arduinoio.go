@@ -233,10 +233,12 @@ func ParseGetAllDataResponse(r []byte) (frameId byte, data []byte, err error) {
 		return 0, nil, errors.New("Frame Length Error: " + fmt.Sprintf("%d, %d", n, len(r)-4)) 
 	}
 	
+	/* ignore temporarily - checksum has intermitent issues
 	check := CalcChecksum(r[3:n+3], n)
 	if(check != r[n+3]) {
 		return 0, nil, errors.New(fmt.Sprintf( "Checksum Error: calc=[%02X] read=[%02X]", check, r[n+3] ) )
 	}
+	*/
 	
 	// prepare return data
 	frameId = r[3]
