@@ -36,7 +36,6 @@ func main() {
 	gtk.Init(nil)
 	var wg sync.WaitGroup
 	quit := make(chan bool)
-	var serialUSB int = -1
 	var serialXBEE int = -1
 	var err error
 	var i int
@@ -238,7 +237,6 @@ func main() {
 	// subroutine to send telemetry
 	go func() {
 		var d []byte
-		var n int
 		var err error
 		wg.Add(1)
 		fmt.Println("Begin sending telemetry...")
@@ -250,7 +248,7 @@ func main() {
 				wg.Done()
 				return
 			default:
-				d, n, err = arduinoio.SendGetAllDataCommand()
+				d, _, err = arduinoio.SendGetAllDataCommand()
 				if err != nil {
 					fmt.Println("Send Command aio error: " + err.Error())
 				}
@@ -394,17 +392,18 @@ func xbeeATComCB(d []byte) {
 }
 
 func aioGetAllCB(d []byte) {
+	var i int
 	// todo: checksum verification
 	fmt.Println("GetAll Callback: ")
-    for i:= 0; i < 6; i++ {
+    for i = 0; i < 6; i++ {
         analog[i] = (int(d[i*2]) * 256) + int(d[i*2+1])
         s := strconv.Itoa(analog[i])
         fmt.Print(s)
         fmt.Print(", ")
     }
-	buttons0 = d[i]
+	buttons0 = int(d[i])
 	i++
-	buttons1 = d[i]
+	buttons1 = int(d[i])
     fmt.Println(".")
 	lastReceivedControl = time.Now()
 }
