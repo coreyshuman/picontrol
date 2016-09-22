@@ -74,7 +74,9 @@ func main() {
 	
 	// configure xbee api and start job
 	xbeeapi.SetupErrorHandler(errorCallback)
-	xbeeapi.AddHandler(0x88, xbeeATComCB)
+	xbeeapi.SetupModemStatusCallback(modemStatusCallback)
+	xbeeapi.SetupATCommandCallback(atCommandCallback)
+	xbeeapi.SetupReceivePacketCallback(receivePacketCallback)
 	xbeeapi.Begin()
 	fmt.Println("XBEE: " + fmt.Sprintf("%d",serialXBEE))
 	
@@ -157,9 +159,7 @@ func main() {
 			volume ++
 			volBar.SetFraction(float64(volume)/63.0)
 			// send volume command to device
-			d := []byte{'v', 'o', 'l', ' ', 0x00}
-			d[4] = byte(volume)
-			_, _, _ = xbeeapi.SendPacket(targetAddress, nil, 0x00, d)
+			err = sendVolume(volume)
 		}
 	})
 	btnVolDown := gtk.NewButtonWithLabel("Vol DOWN")
@@ -169,9 +169,7 @@ func main() {
 			volume --
 			volBar.SetFraction(float64(volume)/63.0)
 			// send volume command to device
-			d := []byte{'v', 'o', 'l', ' ', 0x00}
-			d[4] = byte(volume)
-			_, _, _ = xbeeapi.SendPacket(targetAddress, nil, 0x00, d)
+			err = sendVolume(volume)
 		}
 	})
 	btnPlaySW := gtk.NewButtonWithLabel("Play SW")
@@ -180,13 +178,11 @@ func main() {
 		if (playSW) {
 			playSW = false
 			btnPlaySW.SetLabel("Play SW")
-			d := []byte{'s', 't', 'p', ' ', '1'}
-			_, _, _ = xbeeapi.SendPacket(targetAddress, nil, 0x00, d)
+			err = sendStop(1)
 		} else {
 			playSW = true
 			btnPlaySW.SetLabel("Stop SW")
-			d := []byte{'p', 'l', 'y', ' ', '1', ' ', 'S', 'W', '0', '1'}
-			_, _, _ = xbeeapi.SendPacket(targetAddress, nil, 0x00, d)
+			err = sendPlay(1, "SW01")
 		}
 	})
 	
@@ -265,8 +261,7 @@ func main() {
 					fmt.Println("Send Command aio error: " + err.Error())
 				}
 				time.Sleep(time.Millisecond*50)
-				d = formatTelemetry()
-				_, _, err := xbeeapi.SendPacket(targetAddress, nil, 0x00, d)
+				err = sendFullTelemetry()
 				if err != nil {
 					fmt.Println("Send Packet xbee error: " + err.Error())
 				}
@@ -398,9 +393,23 @@ func getXBEEInfo() {
 
 
 /************** Callback Functions ****************/
-func xbeeATComCB(d []byte) {
-	fmt.Println("Response Callback: ")
-	fmt.Println(hex.Dump(d))
+var atCommandCallback xbeeapi.ATCommandCallbackFunc = func(frameId byte, data []byte) {
+	fmt.Println("AT Response: ")
+	fmt.Println(hex.Dump(data))
+}
+
+var receivePacketCallback xbeeapi.ReceivePacketCallbackFunc = func(destinationAddress64 [8]byte, destinationAddress16 [2]byte, receiveOptions byte, data []byte) {
+	var e gtk.TextIter
+	
+	bufAscii.GetEndIter(&e)
+	bufAscii.Insert(&e, string(data[:]))
+	bufHex.GetEndIter(&e)
+	bufHex.Insert(&e, hex.EncodeToString(data[:]))
+}
+
+var modemStatusCallback xbeeapi.ModemStatusCallbackFunc = func(status byte) {
+	modemStatus := xbeeapi.GetModemStatusDescription(status)
+	fmt.Println("Modem Status: " + modemStatus)
 }
 
 func aioGetAllCB(d []byte) {
@@ -418,4 +427,37 @@ func aioGetAllCB(d []byte) {
 	buttons1 = int(d[i])
     fmt.Println(".")
 	lastReceivedControl = time.Now()
+}
+
+
+
+/************** Send Telemetry/Commands Functions ****************/
+func handleSendError(err error) () {
+	fmt.Println("Send Error: " + err.Error())
+}
+
+func sendFullTelemetry() (error) {
+	d = formatTelemetry()
+	_, _, err := xbeeapi.SendPacket(targetAddress, nil, 0x00, d)
+	return err
+}
+
+func sendVolume(volume int) (error) {
+	d := []byte{'v', 'o', 'l', ' ', 0x00}
+	d[4] = byte(volume)
+	_, _, err = xbeeapi.SendPacket(targetAddress, nil, 0x00, d)
+	return err
+}
+
+func sendStop(channel int) (error) {
+	d := []byte{'s', 't', 'p', ' ', byte(channel)}
+	_, _, err = xbeeapi.SendPacket(targetAddress, nil, 0x00, d)
+	return err
+}
+
+func sendPlay(channel int, filename string) (error) {
+	d := []byte{'p', 'l', 'y', ' ', byte(channel), ' ' }
+	d = append(d[:], filename...)
+	_, _, err = xbeeapi.SendPacket(targetAddress, nil, 0x00, d)
+	return err
 }
