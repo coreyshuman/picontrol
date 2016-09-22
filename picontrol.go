@@ -41,7 +41,7 @@ func main() {
 	var i int
 	
 	// bb-8 body address
-	targetAddress = []byte{0x00, 0x13, 0xa2, 0x00, 0x40, 0x90, 0x2a, 0x21}
+	targetAddress = []byte{0x00, 0x13, 0xa2, 0x00, 0x40, 0x90, 0x29, 0x23}
 	
 	for i=0; i<6; i++ {
 		analog[i] = 0
@@ -68,7 +68,7 @@ func main() {
 	serialAIO, err := arduinoio.Init(deva, baudna, 1)
 	if(err != nil) {
 		fmt.Println("Error: " + err.Error())
-		xbeeapi.End() // exit xbee api
+		xbeeapi.Close() // exit xbee api
 		return
 	}
 	
@@ -244,7 +244,7 @@ func main() {
 	getXBEEInfo()
 	// subroutine to send telemetry
 	go func() {
-		var d []byte
+		//var d []byte
 		var err error
 		wg.Add(1)
 		fmt.Println("Begin sending telemetry...")
@@ -256,7 +256,7 @@ func main() {
 				wg.Done()
 				return
 			default:
-				d, _, err = arduinoio.SendGetAllDataCommand()
+				_, _, err = arduinoio.SendGetAllDataCommand()
 				if err != nil {
 					fmt.Println("Send Command aio error: " + err.Error())
 				}
@@ -332,7 +332,7 @@ func btoi(b bool) int {
 }
 
 func closeApp() {
-	xbeeapi.End()
+	xbeeapi.Close()
 	arduinoio.End()
 	fmt.Println("Closing...")
 	time.Sleep(time.Millisecond*1000)
@@ -399,12 +399,7 @@ var atCommandCallback xbeeapi.ATCommandCallbackFunc = func(frameId byte, data []
 }
 
 var receivePacketCallback xbeeapi.ReceivePacketCallbackFunc = func(destinationAddress64 [8]byte, destinationAddress16 [2]byte, receiveOptions byte, data []byte) {
-	var e gtk.TextIter
 	
-	bufAscii.GetEndIter(&e)
-	bufAscii.Insert(&e, string(data[:]))
-	bufHex.GetEndIter(&e)
-	bufHex.Insert(&e, hex.EncodeToString(data[:]))
 }
 
 var modemStatusCallback xbeeapi.ModemStatusCallbackFunc = func(status byte) {
@@ -437,7 +432,7 @@ func handleSendError(err error) () {
 }
 
 func sendFullTelemetry() (error) {
-	d = formatTelemetry()
+	d := formatTelemetry()
 	_, _, err := xbeeapi.SendPacket(targetAddress, nil, 0x00, d)
 	return err
 }
@@ -445,19 +440,19 @@ func sendFullTelemetry() (error) {
 func sendVolume(volume int) (error) {
 	d := []byte{'v', 'o', 'l', ' ', 0x00}
 	d[4] = byte(volume)
-	_, _, err = xbeeapi.SendPacket(targetAddress, nil, 0x00, d)
+	_, _, err := xbeeapi.SendPacket(targetAddress, nil, 0x00, d)
 	return err
 }
 
 func sendStop(channel int) (error) {
 	d := []byte{'s', 't', 'p', ' ', byte(channel)}
-	_, _, err = xbeeapi.SendPacket(targetAddress, nil, 0x00, d)
+	_, _, err := xbeeapi.SendPacket(targetAddress, nil, 0x00, d)
 	return err
 }
 
 func sendPlay(channel int, filename string) (error) {
 	d := []byte{'p', 'l', 'y', ' ', byte(channel), ' ' }
 	d = append(d[:], filename...)
-	_, _, err = xbeeapi.SendPacket(targetAddress, nil, 0x00, d)
+	_, _, err := xbeeapi.SendPacket(targetAddress, nil, 0x00, d)
 	return err
 }
