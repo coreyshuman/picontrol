@@ -317,6 +317,7 @@ func formatTelemetry() (out []byte) {
 	outs += "0000,"
 	digital = btoi(armDevice) << 15 | btoi(stabilize) << 14 | btoi(autoVoice) << 13
 	outs += fmt.Sprintf("%04X", digital)
+	outs += "\n";
 	fmt.Println(outs)
 	
 	out = []byte(outs)
