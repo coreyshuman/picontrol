@@ -51,7 +51,7 @@ func Init(dev string, baud int, timeout int) (int, error) {
 	rxBuf = srbuf.Create(256)
 	// initialize a serial interface to the xbee module
 	serial.Init()
-	serialAIO, err = serial.Connect(dev, baud, timeout)
+	serialAIO, err = serial.Connect(dev, baud, timeout, true)
 	quit = make(chan bool)
 	rxHandlerList = list.New()
 	return serialAIO, err

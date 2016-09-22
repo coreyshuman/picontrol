@@ -26,7 +26,7 @@ func main() {
 	var err error
 	
 	// bb-8 body address
-	targetAddress = []byte{0x00, 0x13, 0xa2, 0x00, 0x40, 0x90, 0x2a, 0x21}
+	targetAddress = []byte{0x00, 0x13, 0xa2, 0x00, 0x40, 0x90, 0x29, 0x23}
 	
 	devx := os.Args[1]
 	fmt.Println("XBEE")
@@ -101,14 +101,24 @@ func main() {
 		fmt.Println(fmt.Sprintf("Sent (%d): ", n) + hex.Dump(d))
 	}
 	
-	// get PAN ID
+	// get operating PAN ID
 	time.Sleep(time.Millisecond*XbeeInterDelay)
-	d, n, err = xbeeapi.SendATCommand([]byte{byte('I'), byte('D')}, nil)
+	d, n, err = xbeeapi.SendATCommand([]byte{byte('O'), byte('P')}, nil)
 	if(err != nil) {
 		fmt.Println("Send AT error: " + err.Error())
 	} else {
 		fmt.Println(fmt.Sprintf("Sent (%d): ", n) + hex.Dump(d))
 	}
+
+        // get operating 16-bit PAN
+        time.Sleep(time.Millisecond*XbeeInterDelay)
+        d, n, err = xbeeapi.SendATCommand([]byte{byte('O'), byte('I')}, nil)
+        if(err != nil) {
+                fmt.Println("Send AT error: " + err.Error())
+        } else {
+                fmt.Println(fmt.Sprintf("Sent (%d): ", n) + hex.Dump(d))
+        }
+
 	
 	/*************** Enter Main Loop **************/
 	// Read Arduino data and send to xbee
