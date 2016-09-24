@@ -182,7 +182,7 @@ func main() {
 		} else {
 			playSW = true
 			btnPlaySW.SetLabel("Stop SW")
-			err = sendPlay(1, "SW01")
+			err = sendPlay(1, "sw01")
 		}
 	})
 	
@@ -308,7 +308,7 @@ func formatTelemetry() (out []byte) {
 	
 	if(headControl) {
 		alg[4] = alg[2]
-		alg[2] = 0
+		alg[2] = 512
 	}
 	
 	for i=0; i<6; i++ {
