@@ -301,11 +301,17 @@ func formatTelemetry() (out []byte) {
 	var digital int = 0
 	var alg [6]int
 	var i int
+	var temp int
 	
 	for i=0; i<6; i++ {
 		alg[i] = analog[i]
 	}
-	
+
+	// switch left stick x and y
+	   temp = alg[2]
+	   	alg[2] = alg[3]
+		       alg[3] = temp
+
 	if(headControl) {
 		alg[4] = alg[2]
 		alg[2] = 512
@@ -439,14 +445,14 @@ func sendFullTelemetry() (error) {
 }
 
 func sendVolume(volume int) (error) {
-	d := []byte{'v', 'o', 'l', ' ', 0x00}
+	d := []byte{'v', 'o', 'l', ' ', 0x00, '\n'}
 	d[4] = byte(volume)
 	_, _, err := xbeeapi.SendPacket(targetAddress, nil, 0x00, d)
 	return err
 }
 
 func sendStop(channel int) (error) {
-	d := []byte{'s', 't', 'p', ' ', byte(channel)}
+	d := []byte{'s', 't', 'p', ' ', byte(channel), '\n'}
 	_, _, err := xbeeapi.SendPacket(targetAddress, nil, 0x00, d)
 	return err
 }
@@ -454,6 +460,7 @@ func sendStop(channel int) (error) {
 func sendPlay(channel int, filename string) (error) {
 	d := []byte{'p', 'l', 'y', ' ', byte(channel), ' ' }
 	d = append(d[:], filename...)
+	d = append(d[:], '\n')
 	_, _, err := xbeeapi.SendPacket(targetAddress, nil, 0x00, d)
 	return err
 }
