@@ -41,7 +41,7 @@ func main() {
 	var i int
 	
 	// broadcast
-	targetAddress = []byte{0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF}
+	targetAddress = []byte{0x00, 0x13, 0xA2, 0x00, 0x40, 0x90, 0x2A, 0x21}
 	
 	for i=0; i<6; i++ {
 		analog[i] = 0
@@ -297,11 +297,11 @@ func scale(val float64, min float64, max float64, outMin float64, outMax float64
 }
 
 func formatTelemetry() (out []byte) {
-	outs := "rt"
+	outs := "$rt"
 	var digital int = 0
 	var alg [6]int
 	var i int
-	var temp int
+	// var temp int
 	
 	for i=0; i<6; i++ {
 		alg[i] = analog[i]
@@ -324,7 +324,7 @@ func formatTelemetry() (out []byte) {
 	outs += "0000,"
 	digital = btoi(armDevice) << 15 | btoi(stabilize) << 14 | btoi(autoVoice) << 13
 	outs += fmt.Sprintf("%04X", digital)
-	outs += "\n";
+	outs += "&*\n";
 	fmt.Println(outs)
 	
 	out = []byte(outs)
