@@ -40,8 +40,8 @@ func main() {
 	var err error
 	var i int
 	
-	// broadcast
-	targetAddress = []byte{0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF}
+	// bb-8 body address
+	targetAddress = []byte{0x00, 0x13, 0xa2, 0x00, 0x40, 0x90, 0x29, 0x23}
 	
 	for i=0; i<6; i++ {
 		analog[i] = 0
@@ -297,7 +297,7 @@ func scale(val float64, min float64, max float64, outMin float64, outMax float64
 }
 
 func formatTelemetry() (out []byte) {
-	outs := "rt"
+	outs := "tel "
 	var digital int = 0
 	var alg [6]int
 	var i int
@@ -308,11 +308,10 @@ func formatTelemetry() (out []byte) {
 	}
 
 	// switch left stick x and y
-	/*
 	   temp = alg[2]
 	   	alg[2] = alg[3]
 		       alg[3] = temp
-*/
+
 	if(headControl) {
 		alg[4] = alg[2]
 		alg[2] = 512
