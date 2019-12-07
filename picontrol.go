@@ -22,7 +22,7 @@ var lastReceivedControl time.Time
 // robot state variables
 var armDevice bool = false
 var stabilize bool = false
-var autoVoice bool = false
+var freeMotion bool = false
 var headControl bool = false
 var playSW bool = false
 var volume int = 20
@@ -117,26 +117,26 @@ func main() {
 			btnArm.SetLabel("Disarm Device")
 		}
 	})
-	btnStabilize := gtk.NewButtonWithLabel("Enable IMU")
+	btnStabilize := gtk.NewButtonWithLabel("Stabilize")
 	btnStabilize.Clicked(func() {
 		fmt.Println("button clicked:", btnStabilize.GetLabel())
 		if (stabilize) {
 			stabilize = false
-			btnStabilize.SetLabel("Enable IMU")
+			btnStabilize.SetLabel("Stabilize")
 		} else {
 			stabilize = true
-			btnStabilize.SetLabel("Disable IMU")
+			btnStabilize.SetLabel("Destabilize")
 		}
 	})
-	btnAutoVoice := gtk.NewButtonWithLabel("Enable Voice")
-	btnAutoVoice.Clicked(func() {
-		fmt.Println("button clicked:", btnAutoVoice.GetLabel())
-		if (autoVoice) {
-			autoVoice = false
-			btnAutoVoice.SetLabel("Enable Voice")
+	btnFreeMotion := gtk.NewButtonWithLabel("Free Motion")
+	btnFreeMotion.Clicked(func() {
+		fmt.Println("button clicked:", btnFreeMotion.GetLabel())
+		if (freeMotion) {
+			freeMotion = false
+			btnFreeMotion.SetLabel("Free Motion")
 		} else {
-			autoVoice = true
-			btnAutoVoice.SetLabel("Disable Voice")
+			freeMotion = true
+			btnFreeMotion.SetLabel("Static")
 		}
 	})
 	btnHeadControl := gtk.NewButtonWithLabel("Enable Head Cont.")
@@ -307,21 +307,19 @@ func formatTelemetry() (out []byte) {
 		alg[i] = analog[i]
 	}
 
-	// switch left stick x and y
-	/*
-	   temp = alg[2]
-	   	alg[2] = alg[3]
-		       alg[3] = temp
-*/
+	// for now move head turn to right stick X
+	alg[4] = alg[3]
+	alg[3] = 0x8000
+
 	if(headControl) {
-		alg[4] = alg[2]
-		alg[2] = 512
+		alg[5] = alg[2]
+		alg[2] = 0x8000
 	}
 	
 	for i=0; i<6; i++ {
 		outs += fmt.Sprintf("%04X", alg[i]*0xFFFF/1023) + ","
 	}
-	outs += "0000,"
+	outs += fmt.Sprintf("%04X", buttons0) + ","
 	digital = btoi(armDevice) << 15 | btoi(stabilize) << 14 | btoi(autoVoice) << 13
 	outs += fmt.Sprintf("%04X", digital)
 	outs += "&*\n";
@@ -459,8 +457,7 @@ func sendStop(channel int) (error) {
 }
 
 func sendPlay(channel int, filename string) (error) {
-	d := []byte{'p', 'l', 'y', ' ', byte(channel), ' ' }
-	d = append(d[:], filename...)
+	d := []byte{'$', 'a', 'r', '&', '*' }
 	d = append(d[:], '\n')
 	_, _, err := xbeeapi.SendPacket(targetAddress, nil, 0x00, d)
 	return err
